@@ -1,25 +1,43 @@
+name: tournament-api
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tournament_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tournament_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tournament_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      target: production
     restart: unless-stopped
     depends_on:
-      - db
-    env_file:
-      - .env
+      db:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/tournament_db?schema=public
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-tournament_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@tournament.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
     ports:
       - "3000:3000"
 
