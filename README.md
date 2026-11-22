@@ -38,6 +38,18 @@ pnpm install
 cp .env.example .env
 ```
 
+| Variable         | Required        | Default       | Description                          |
+| ---------------- | --------------- | ------------- | ------------------------------------ |
+| `DATABASE_URL`   | yes             | –             | PostgreSQL connection string         |
+| `JWT_SECRET`     | yes (min 8)     | –             | Secret used to sign JWTs             |
+| `JWT_EXPIRES_IN` | no              | `1d`          | JWT lifetime                         |
+| `PORT`           | no              | `3000`        | HTTP port                            |
+| `NODE_ENV`       | no              | `development` | `development`, `production`, `test`  |
+| `ADMIN_EMAIL`    | no              | –             | Bootstrap admin email                |
+| `ADMIN_PASSWORD` | no              | –             | Bootstrap admin password             |
+
+Variables are validated on startup: the app fails fast with a readable message when a required value is missing or invalid.
+
 ### 3. Start PostgreSQL
 
 ```bash
@@ -57,6 +69,7 @@ pnpm start:dev
 ```
 
 - API: `http://localhost:3000/api`
+- Health: `http://localhost:3000/health`
 - Swagger: `http://localhost:3000/docs`
 
 ## Scripts
@@ -85,6 +98,7 @@ docker compose up --build
 The `api` container waits for PostgreSQL to be healthy, applies pending Prisma migrations, and then starts the server.
 
 - API: `http://localhost:3000/api`
+- Health: `http://localhost:3000/health`
 - Swagger: `http://localhost:3000/docs`
 
 Environment values are read from `.env` when present; otherwise local development defaults are used.

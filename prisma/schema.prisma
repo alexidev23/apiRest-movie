@@ -6,3 +6,105 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum TournamentStatus {
+  DRAFT
+  IN_PROGRESS
+  FINISHED
+}
+
+enum MatchType {
+  LEAGUE
+  ZONE_CUP
+  SEASON_CUP
+}
+
+enum MatchStatus {
+  PENDING
+  IN_PROGRESS
+  FINISHED
+}
+
+model Tournament {
+  id        String           @id @default(uuid())
+  name      String
+  season    String
+  status    TournamentStatus @default(DRAFT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  zones   Zone[]
+  teams   Team[]
+  matches Match[]
+
+  @@unique([name, season])
+}
+
+model Zone {
+  id           String     @id @default(uuid())
+  name         String
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  teams   Team[]
+  matches Match[]
+
+  @@unique([tournamentId, name])
+  @@index([tournamentId])
+}
+
+model Team {
+  id           String     @id @default(uuid())
+  name         String
+  tournamentId String
+  zoneId       String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  zone         Zone       @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+
+  @@unique([tournamentId, name])
+  @@index([tournamentId, zoneId])
+}
+
+model Match {
+  id           String      @id @default(uuid())
+  tournamentId String
+  zoneId       String?
+  type         MatchType
+  status       MatchStatus @default(PENDING)
+
+  round        Int?
+  matchday     Int?
+  bracketLabel String?
+
+  homeTeamId String
+  awayTeamId String
+
+  homeScore     Int?
+  awayScore     Int?
+  homeExtraTime Int?
+  awayExtraTime Int?
+  homePenalties Int?
+  awayPenalties Int?
+
+  scheduledAt DateTime?
+  playedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  zone       Zone?      @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  homeTeam   Team       @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeam   Team       @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+
+  @@index([tournamentId, type])
+  @@index([zoneId, type])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+}
